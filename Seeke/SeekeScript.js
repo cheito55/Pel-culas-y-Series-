@@ -1,7 +1,8 @@
 /*
  * GrayJay Plugin - Seeke
  * Buscador con caratulas TMDB y contenido en espanol latino
- * v1.6 - Fixed http global (lowercase) + GET method + error handling
+ * v2.0 - Pure ES5 for GrayJay V8 compatibility
+ *        No class, no const/let, no arrow functions, no template literals
  */
 var _conf = {};
 var DEFAULT_TMDB_KEY = "1c7e5ac8a89d07489b3b14d7b3b1b0a2";
@@ -35,7 +36,7 @@ function seekeSearchUrl(title, year) {
 
 function safeHttpGet(url) {
     try {
-        return http.GET(url);
+        return http.GET(url, {});
     } catch (e) {
         return null;
     }
@@ -188,6 +189,25 @@ function tmdbDetails(mediaType, tmdbId) {
     });
 }
 
+// ===== Pager (ES5 prototype, no class) =====
+
+function SeekePager(results, hasMore, context) {
+    VideoPager.call(this, results, hasMore, context);
+}
+SeekePager.prototype = Object.create(VideoPager.prototype);
+SeekePager.prototype.constructor = SeekePager;
+SeekePager.prototype.nextPage = function() {
+    try {
+        if (this.context && this.context.type === "search" && this.context.query) {
+            var result = tmdbSearch(this.context.query, this.context.page);
+            return new SeekePager(result.videos, result.totalPages > this.context.page, { page: this.context.page + 1, query: this.context.query, type: "search" });
+        }
+        return source.getHome(this.context);
+    } catch(e) {
+        return new SeekePager([], false, {});
+    }
+};
+
 // ===== Source API Implementation =====
 
 source.enable = function(conf) {
@@ -250,8 +270,8 @@ source.searchSuggestions = function(query) {
         if (data.results) {
             for (var i = 0; i < Math.min(data.results.length, 5); i++) {
                 var item = data.results[i];
-                var title = item.title || item.name;
-                if (title) suggestions.push(title);
+                var t = item.title || item.name;
+                if (t) suggestions.push(t);
             }
         }
         return suggestions;
@@ -259,7 +279,6 @@ source.searchSuggestions = function(query) {
         return [];
     }
 };
-
 
 source.isChannelUrl = function(url) {
     return false;
@@ -362,22 +381,3 @@ source.getChannel = function(url) {
         subscriberCount: 0
     });
 };
-
-// ===== Pager =====
-
-class SeekePager extends VideoPager {
-    constructor(results, hasMore, context) {
-        super(results, hasMore, context);
-    }
-    nextPage() {
-        try {
-            if (this.context && this.context.type === "search" && this.context.query) {
-                var result = tmdbSearch(this.context.query, this.context.page);
-                return new SeekePager(result.videos, result.totalPages > this.context.page, { page: this.context.page + 1, query: this.context.query, type: "search" });
-            }
-            return source.getHome(this.context);
-        } catch(e) {
-            return new SeekePager([], false, {});
-        }
-    }
-}
