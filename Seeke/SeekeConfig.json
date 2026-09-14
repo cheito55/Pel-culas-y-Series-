@@ -1,0 +1,34 @@
+{
+    "name": "Seeke",
+    "platformUrl": "https://seeke.ai/",
+    "description": "Buscador Seeke con carátulas TMDB y contenido en español latino",
+    "author": "cheito55",
+    "authorUrl": "https://github.com/cheito55",
+    "repositoryUrl": "https://github.com/cheito55/MiRepoFamiliar",
+    "sourceUrl": "https://raw.githubusercontent.com/cheito55/MiRepoFamiliar/main/Seeke/SeekeConfig.json",
+    "scriptUrl": "./SeekeScript.js",
+    "version": 1,
+    "iconUrl": "",
+    "id": "a7c3e8f1-2b4d-4e6a-9f0c-1d3e5a7b9c0d",
+    "scriptSignature": "",
+    "scriptPublicKey": "",
+    "packages": ["Http", "DOMParser"],
+    "allowEval": false,
+    "allowUrls": [
+        "api.themoviedb.org",
+        "image.tmdb.org",
+        "www.themoviedb.org",
+        "search.newsparkking.com",
+        "seeke.ai",
+        "seekee.ai"
+    ],
+    "settings": [
+        {
+            "variable": "tmdbApiKey",
+            "name": "TMDB API Key",
+            "description": "API key de TMDB (obtener gratis en themoviedb.org). Si se deja vacío, se usa una clave pública.",
+            "type": "String",
+            "default": ""
+        }
+    ]
+}

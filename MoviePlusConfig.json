@@ -1,0 +1,35 @@
+{
+	"name": "Movie! Plus",
+	"description": "Catálogo de películas y series del backend de la app Movie! Plus (appsdevxp.com / dev-mplus01). Películas reproducibles vía Yandex Disk.",
+	"author": "dev-mplus01",
+	"authorUrl": "https://github.com/dev-mplus01",
+	"platformUrl": "https://appsdevxp.com",
+	"sourceUrl": "https://raw.githubusercontent.com/cheito55/Pel-culas-y-Series-/main/MoviePlusConfig.json",
+	"repositoryUrl": "https://github.com/cheito55/Pel-culas-y-Series-",
+	"scriptUrl": "https://raw.githubusercontent.com/cheito55/Pel-culas-y-Series-/main/MoviePlusScript.js",
+	"version": 2,
+	"iconUrl": "https://raw.githubusercontent.com/cheito55/Pel-culas-y-Series-/main/MoviePlus.png",
+	"id": "3f6f2c10-9c1e-4d5e-a4e1-7a1f2b3c4d5e",
+	"scriptSignature": "",
+	"scriptPublicKey": "",
+	"packages": ["Http", "Utilities"],
+	"packagesOptional": [],
+	"allowEval": false,
+	"allowUrls": [
+		"appsdevxp.com", ".appsdevxp.com", "appsdevx.com", ".appsdevx.com",
+		"developerxploit.com", ".developerxploit.com", "raw.githubusercontent.com",
+		"github.com", "api.themoviedb.org", "image.tmdb.org", "themoviedb.org",
+		"yadi.sk", ".yadi.sk", "disk.yandex.com", "disk.yandex.net",
+		"cloud-api.yandex.net", "get.disk.yandex.net", "downloader.disk.yandex.com",
+		"downloader.disk.yandex.net", ".yandex.net", ".yandex.com"
+	],
+	"settings": [
+		{
+			"variable": "fullCatalog",
+			"name": "Catálogo completo",
+			"description": "Intentar usar el catálogo completo (items_up.json.gz, ~19k películas). Si falla, usa la lista plana.",
+			"type": "Boolean",
+			"default": "true"
+		}
+	]
+}
