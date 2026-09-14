@@ -1,7 +1,7 @@
 /*
  * GrayJay Plugin - Seeke
  * Buscador con caratulas TMDB y contenido en espanol latino
- * v1.2 - TMDB catalogo + Seeke links en descripcion + paginado corregido
+ * v1.3 - IDs con mediaType + try/catch en HTTP + paginado corregido
  */
 var _conf = {};
 var DEFAULT_TMDB_KEY = "1c7e5ac8a89d07489b3b14d7b3b1b0a2";
@@ -33,16 +33,26 @@ function seekeSearchUrl(title, year) {
     return "https://search.newsparkking.com/search?q=" + encodeURIComponent(q) + "&lang=es";
 }
 
+function safeHttpGetJson(url) {
+    try {
+        var resp = Http.get(url);
+        if (!resp.isOk) return null;
+        return JSON.parse(resp.body);
+    } catch (e) {
+        return null;
+    }
+}
+
 function buildVideoFromTMDB(item, mediaType) {
     var title = item.title || item.name || "Sin titulo";
     var dateStr = item.release_date || item.first_air_date || "";
     var year = dateStr ? dateStr.substring(0, 4) : "";
     var posterPath = item.poster_path || null;
     var backdropPath = item.backdrop_path || null;
-    var id = (mediaType || item.media_type || "movie") + "/" + item.id;
+    var id = mediaType + "-" + item.id;
 
     return new PlatformVideo({
-        id: new PlatformID("Seeke", String(item.id), _conf.id),
+        id: new PlatformID("Seeke", id, _conf.id),
         name: year ? title + " (" + year + ")" : title,
         thumbnails: buildThumbnails(posterPath, backdropPath),
         author: new PlatformAuthorLink(
@@ -66,8 +76,8 @@ function tmdbSearch(query, page) {
               "&language=es-MX&page=" + (page || 1) +
               "&include_adult=false";
 
-    var resp = Http.get(url);
-    var data = JSON.parse(resp.body);
+    var data = safeHttpGetJson(url);
+    if (!data) return { videos: [], totalPages: 1 };
 
     var videos = [];
     if (data && data.results) {
@@ -87,8 +97,8 @@ function tmdbDetails(mediaType, tmdbId) {
     var url = "https://api.themoviedb.org/3/" + mediaType + "/" + tmdbId +
               "?api_key=" + apiKey + "&language=es-MX&append_to_response=videos,credits,watch_providers";
 
-    var resp = Http.get(url);
-    var data = JSON.parse(resp.body);
+    var data = safeHttpGetJson(url);
+    if (!data) throw new Error("No se pudo obtener info de TMDB");
 
     var title = data.title || data.name || "Sin titulo";
     var overview = data.overview || "";
@@ -146,7 +156,7 @@ function tmdbDetails(mediaType, tmdbId) {
     var genreStr = genres.length > 0 ? "Generos: " + genres.join(", ") + "\n" : "";
 
     return new PlatformVideoDetails({
-        id: new PlatformID("Seeke", String(tmdbId), _conf.id),
+        id: new PlatformID("Seeke", mediaType + "-" + tmdbId, _conf.id),
         name: displayName,
         thumbnails: buildThumbnails(posterPath, backdropPath),
         author: new PlatformAuthorLink(
@@ -158,7 +168,7 @@ function tmdbDetails(mediaType, tmdbId) {
         uploadDate: parseDate(dateStr),
         duration: 0,
         viewCount: data.vote_count || 0,
-        url: mediaType + "/" + tmdbId,
+        url: mediaType + "-" + tmdbId,
         isLive: false,
         description: genreStr + fullDescription,
         video: new VideoSourceDescriptor(videoSources),
@@ -183,8 +193,8 @@ source.getHome = function(continuationToken) {
         url += "&page=" + continuationToken.page;
     }
 
-    var resp = Http.get(url);
-    var data = JSON.parse(resp.body);
+    var data = safeHttpGetJson(url);
+    if (!data) return new SeekePager([], false, { page: 1, type: "home" });
 
     var videos = [];
     if (data && data.results) {
@@ -220,8 +230,8 @@ source.searchSuggestions = function(query) {
         var apiKey = getApiKey();
         var url = "https://api.themoviedb.org/3/search/multi?api_key=" + apiKey +
                   "&query=" + encodeURIComponent(query) + "&language=es-MX&page=1&include_adult=false";
-        var resp = Http.get(url);
-        var data = JSON.parse(resp.body);
+        var data = safeHttpGetJson(url);
+        if (!data) return [];
         var suggestions = [];
         if (data && data.results) {
             for (var i = 0; i < Math.min(data.results.length, 5); i++) {
@@ -237,12 +247,12 @@ source.searchSuggestions = function(query) {
 };
 
 source.isContentDetailsUrl = function(url) {
-    return /^(movie|tv)\/\d+/.test(url);
+    return /^(movie|tv)-\d+$/.test(url);
 };
 
 source.getContentDetails = function(url) {
-    var match = url.match(/^(movie|tv)\/(\d+)/);
-    if (!match) throw new Error("Invalid Seeke URL: " + url);
+    var match = url.match(/^(movie|tv)-(\d+)$/);
+    if (!match) throw new Error("URL de Seeke invalida: " + url);
     return tmdbDetails(match[1], match[2]);
 };
 
