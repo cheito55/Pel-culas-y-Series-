@@ -1,7 +1,7 @@
 /*
  * GrayJay Plugin - Seeke
  * Buscador con caratulas TMDB y contenido en espanol latino
- * v1.3 - IDs con mediaType + try/catch en HTTP + paginado corregido
+ * v1.5 - Fixed http global (lowercase) + GET method + error handling
  */
 var _conf = {};
 var DEFAULT_TMDB_KEY = "1c7e5ac8a89d07489b3b14d7b3b1b0a2";
@@ -33,11 +33,17 @@ function seekeSearchUrl(title, year) {
     return "https://search.newsparkking.com/search?q=" + encodeURIComponent(q) + "&lang=es";
 }
 
-function safeHttpGetJson(url) {
+function safeHttpGet(url) {
     try {
-        var resp = Http.get(url);
-        if (!resp.isOk) return null;
-        return JSON.parse(resp.body);
+        return http.GET(url);
+    } catch (e) {
+        return null;
+    }
+}
+
+function safeParseJson(body) {
+    try {
+        return JSON.parse(body);
     } catch (e) {
         return null;
     }
@@ -76,11 +82,13 @@ function tmdbSearch(query, page) {
               "&language=es-MX&page=" + (page || 1) +
               "&include_adult=false";
 
-    var data = safeHttpGetJson(url);
+    var resp = safeHttpGet(url);
+    if (!resp || !resp.isOk || !resp.body) return { videos: [], totalPages: 1 };
+    var data = safeParseJson(resp.body);
     if (!data) return { videos: [], totalPages: 1 };
 
     var videos = [];
-    if (data && data.results) {
+    if (data.results) {
         for (var i = 0; i < data.results.length; i++) {
             var item = data.results[i];
             var mt = item.media_type;
@@ -97,8 +105,10 @@ function tmdbDetails(mediaType, tmdbId) {
     var url = "https://api.themoviedb.org/3/" + mediaType + "/" + tmdbId +
               "?api_key=" + apiKey + "&language=es-MX&append_to_response=videos,credits,watch_providers";
 
-    var data = safeHttpGetJson(url);
-    if (!data) throw new Error("No se pudo obtener info de TMDB");
+    var resp = safeHttpGet(url);
+    if (!resp || !resp.isOk || !resp.body) return null;
+    var data = safeParseJson(resp.body);
+    if (!data) return null;
 
     var title = data.title || data.name || "Sin titulo";
     var overview = data.overview || "";
@@ -193,11 +203,13 @@ source.getHome = function(continuationToken) {
         url += "&page=" + continuationToken.page;
     }
 
-    var data = safeHttpGetJson(url);
+    var resp = safeHttpGet(url);
+    if (!resp || !resp.isOk || !resp.body) return new SeekePager([], false, { page: 1, type: "home" });
+    var data = safeParseJson(resp.body);
     if (!data) return new SeekePager([], false, { page: 1, type: "home" });
 
     var videos = [];
-    if (data && data.results) {
+    if (data.results) {
         for (var i = 0; i < data.results.length; i++) {
             var item = data.results[i];
             var mt = item.media_type;
@@ -230,10 +242,12 @@ source.searchSuggestions = function(query) {
         var apiKey = getApiKey();
         var url = "https://api.themoviedb.org/3/search/multi?api_key=" + apiKey +
                   "&query=" + encodeURIComponent(query) + "&language=es-MX&page=1&include_adult=false";
-        var data = safeHttpGetJson(url);
+        var resp = safeHttpGet(url);
+        if (!resp || !resp.isOk || !resp.body) return [];
+        var data = safeParseJson(resp.body);
         if (!data) return [];
         var suggestions = [];
-        if (data && data.results) {
+        if (data.results) {
             for (var i = 0; i < Math.min(data.results.length, 5); i++) {
                 var item = data.results[i];
                 var title = item.title || item.name;
@@ -251,9 +265,79 @@ source.isContentDetailsUrl = function(url) {
 };
 
 source.getContentDetails = function(url) {
-    var match = url.match(/^(movie|tv)-(\d+)$/);
-    if (!match) throw new Error("URL de Seeke invalida: " + url);
-    return tmdbDetails(match[1], match[2]);
+    try {
+        var match = url.match(/^(movie|tv)-(\d+)$/);
+        if (!match) {
+            return new PlatformVideoDetails({
+                id: new PlatformID("Seeke", url, _conf.id),
+                name: "Sin detalles disponibles",
+                thumbnails: new Thumbnails([]),
+                author: new PlatformAuthorLink(
+                    new PlatformID("Seeke", "Seeke", _conf.id),
+                    "Seeke",
+                    "https://seeke.ai",
+                    ""
+                ),
+                uploadDate: 0,
+                duration: 0,
+                viewCount: 0,
+                url: url,
+                isLive: false,
+                description: "No se pudo cargar la informacion.",
+                video: new VideoSourceDescriptor([]),
+                live: null,
+                rating: new RatingLikes(0),
+                subtitles: []
+            });
+        }
+        var details = tmdbDetails(match[1], match[2]);
+        if (!details) {
+            return new PlatformVideoDetails({
+                id: new PlatformID("Seeke", url, _conf.id),
+                name: "Error al cargar",
+                thumbnails: new Thumbnails([]),
+                author: new PlatformAuthorLink(
+                    new PlatformID("Seeke", "Seeke", _conf.id),
+                    "Seeke",
+                    "https://seeke.ai",
+                    ""
+                ),
+                uploadDate: 0,
+                duration: 0,
+                viewCount: 0,
+                url: url,
+                isLive: false,
+                description: "No se pudo obtener info de TMDB.",
+                video: new VideoSourceDescriptor([]),
+                live: null,
+                rating: new RatingLikes(0),
+                subtitles: []
+            });
+        }
+        return details;
+    } catch(e) {
+        return new PlatformVideoDetails({
+            id: new PlatformID("Seeke", url, _conf.id),
+            name: "Error",
+            thumbnails: new Thumbnails([]),
+            author: new PlatformAuthorLink(
+                new PlatformID("Seeke", "Seeke", _conf.id),
+                "Seeke",
+                "https://seeke.ai",
+                ""
+            ),
+            uploadDate: 0,
+            duration: 0,
+            viewCount: 0,
+            url: url,
+            isLive: false,
+            description: "Error: " + String(e),
+            video: new VideoSourceDescriptor([]),
+            live: null,
+            rating: new RatingLikes(0),
+            subtitles: []
+        });
+    }
 };
 
 source.getChannelContents = function(url, type, order, filters, continuationToken) {
@@ -281,10 +365,14 @@ class SeekePager extends VideoPager {
         super(results, hasMore, context);
     }
     nextPage() {
-        if (this.context && this.context.type === "search" && this.context.query) {
-            var result = tmdbSearch(this.context.query, this.context.page);
-            return new SeekePager(result.videos, result.totalPages > this.context.page, { page: this.context.page + 1, query: this.context.query, type: "search" });
+        try {
+            if (this.context && this.context.type === "search" && this.context.query) {
+                var result = tmdbSearch(this.context.query, this.context.page);
+                return new SeekePager(result.videos, result.totalPages > this.context.page, { page: this.context.page + 1, query: this.context.query, type: "search" });
+            }
+            return source.getHome(this.context);
+        } catch(e) {
+            return new SeekePager([], false, {});
         }
-        return source.getHome(this.context);
     }
 }
