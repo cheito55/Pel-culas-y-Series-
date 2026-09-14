@@ -7,12 +7,15 @@
     "repositoryUrl": "https://github.com/cheito55/Pel-culas-y-Series-",
     "sourceUrl": "https://raw.githubusercontent.com/cheito55/Pel-culas-y-Series-/main/Seeke/SeekeConfig.json",
     "scriptUrl": "./SeekeScript.js",
-    "version": 4,
+    "version": 5,
     "iconUrl": "",
     "id": "a7c3e8f1-2b4d-4e6a-9f0c-1d3e5a7b9c0d",
     "scriptSignature": "",
     "scriptPublicKey": "",
-    "packages": ["Http", "DOMParser"],
+    "packages": [
+        "Http",
+        "DOMParser"
+    ],
     "allowEval": false,
     "allowUrls": [
         "api.themoviedb.org",
@@ -30,3 +33,5 @@
             "type": "String",
             "default": ""
         }
+    ]
+}
