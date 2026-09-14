@@ -1,7 +1,7 @@
 /*
  * GrayJay Plugin - Seeke
  * Buscador con caratulas TMDB y contenido en espanol latino
- * v1.5 - Fixed http global (lowercase) + GET method + error handling
+ * v1.6 - Fixed http global (lowercase) + GET method + error handling
  */
 var _conf = {};
 var DEFAULT_TMDB_KEY = "1c7e5ac8a89d07489b3b14d7b3b1b0a2";
@@ -258,6 +258,11 @@ source.searchSuggestions = function(query) {
     } catch(e) {
         return [];
     }
+};
+
+
+source.isChannelUrl = function(url) {
+    return false;
 };
 
 source.isContentDetailsUrl = function(url) {
