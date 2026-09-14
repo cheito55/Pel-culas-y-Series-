@@ -1,7 +1,7 @@
 /*
  * GrayJay Plugin - Seeke
- * Buscador con carátulas TMDB y contenido en español latino
- * v1.1 - Búsqueda TMDB + links Seeke en descripción para fallback WebView
+ * Buscador con caratulas TMDB y contenido en espanol latino
+ * v1.2 - TMDB catalogo + Seeke links en descripcion + paginado corregido
  */
 var _conf = {};
 var DEFAULT_TMDB_KEY = "1c7e5ac8a89d07489b3b14d7b3b1b0a2";
@@ -34,7 +34,7 @@ function seekeSearchUrl(title, year) {
 }
 
 function buildVideoFromTMDB(item, mediaType) {
-    var title = item.title || item.name || "Sin título";
+    var title = item.title || item.name || "Sin titulo";
     var dateStr = item.release_date || item.first_air_date || "";
     var year = dateStr ? dateStr.substring(0, 4) : "";
     var posterPath = item.poster_path || null;
@@ -90,7 +90,7 @@ function tmdbDetails(mediaType, tmdbId) {
     var resp = Http.get(url);
     var data = JSON.parse(resp.body);
 
-    var title = data.title || data.name || "Sin título";
+    var title = data.title || data.name || "Sin titulo";
     var overview = data.overview || "";
     var posterPath = data.poster_path || null;
     var backdropPath = data.backdrop_path || null;
@@ -114,7 +114,7 @@ function tmdbDetails(mediaType, tmdbId) {
 
     var fullDescription = overview +
         "\n\n---\n" +
-        "Ver en Seeke (español latino): " + seekeUrl +
+        "Ver en Seeke (espanol latino): " + seekeUrl +
         "\n" +
         "Ficha en TMDB: " + tmdbPageUrl;
 
@@ -143,7 +143,7 @@ function tmdbDetails(mediaType, tmdbId) {
             genres.push(data.genres[g].name);
         }
     }
-    var genreStr = genres.length > 0 ? "Géneros: " + genres.join(", ") + "\n" : "";
+    var genreStr = genres.length > 0 ? "Generos: " + genres.join(", ") + "\n" : "";
 
     return new PlatformVideoDetails({
         id: new PlatformID("Seeke", String(tmdbId), _conf.id),
@@ -198,7 +198,7 @@ source.getHome = function(continuationToken) {
     }
 
     var page = (continuationToken && continuationToken.page) || 1;
-    return new SeekePager(videos, data.total_pages > page, { page: page + 1 });
+    return new SeekePager(videos, data.total_pages > page, { page: page + 1, type: "home" });
 };
 
 source.getSearchCapabilities = function() {
@@ -212,7 +212,7 @@ source.getSearchCapabilities = function() {
 source.search = function(query, type, order, filters, continuationToken) {
     var page = (continuationToken && continuationToken.page) || 1;
     var result = tmdbSearch(query, page);
-    return new SeekePager(result.videos, result.totalPages > page, { page: page + 1, query: query });
+    return new SeekePager(result.videos, result.totalPages > page, { page: page + 1, query: query, type: "search" });
 };
 
 source.searchSuggestions = function(query) {
@@ -251,7 +251,7 @@ source.getChannelContents = function(url, type, order, filters, continuationToke
 };
 
 source.searchChannels = function(query, continuationToken) {
-    return new ChannelPager([], false, {});
+    return new SeekePager([], false, {});
 };
 
 source.getChannel = function(url) {
@@ -271,6 +271,10 @@ class SeekePager extends VideoPager {
         super(results, hasMore, context);
     }
     nextPage() {
+        if (this.context && this.context.type === "search" && this.context.query) {
+            var result = tmdbSearch(this.context.query, this.context.page);
+            return new SeekePager(result.videos, result.totalPages > this.context.page, { page: this.context.page + 1, query: this.context.query, type: "search" });
+        }
         return source.getHome(this.context);
     }
 }
