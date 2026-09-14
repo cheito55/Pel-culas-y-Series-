@@ -1,13 +1,13 @@
 {
     "name": "Seeke",
     "platformUrl": "https://seeke.ai/",
-    "description": "Buscador Seeke con carátulas TMDB y contenido en español latino",
+    "description": "Buscador Seeke con caratulas TMDB y contenido en espanol latino",
     "author": "cheito55",
     "authorUrl": "https://github.com/cheito55",
     "repositoryUrl": "https://github.com/cheito55/Pel-culas-y-Series-",
-    "sourceUrl": "https://github.com/cheito55/Pel-culas-y-Series-/blob/main/Seeke/SeekeConfig.json",
-    "scriptUrl": "https://github.com/cheito55/Pel-culas-y-Series-/blob/main/Seeke/SeekeScript.js",
-    "version": 1,
+    "sourceUrl": "https://raw.githubusercontent.com/cheito55/Pel-culas-y-Series-/main/Seeke/SeekeConfig.json",
+    "scriptUrl": "./SeekeScript.js",
+    "version": 2,
     "iconUrl": "",
     "id": "a7c3e8f1-2b4d-4e6a-9f0c-1d3e5a7b9c0d",
     "scriptSignature": "",
@@ -26,7 +26,7 @@
         {
             "variable": "tmdbApiKey",
             "name": "TMDB API Key",
-            "description": "API key de TMDB (obtener gratis en themoviedb.org). Si se deja vacío, se usa una clave pública.",
+            "description": "API key de TMDB (obtener gratis en themoviedb.org). Si se deja vacio, se usa una clave publica.",
             "type": "String",
             "default": ""
         }
